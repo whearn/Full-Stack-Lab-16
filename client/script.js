@@ -1,6 +1,7 @@
 var $chirpButton = $('#chirp-btn');
 var $chirpField = $('#chirp-field');
 var $chirpList = $('#chirp-list');
+var $userSelector = $('#user-selector');
 
 $chirpField.on('input', function() {
     var isEmpty = $chirpField.val().length === 0;
@@ -11,7 +12,9 @@ $chirpButton.click(postChirp);
 function postChirp() {
     var chirp = {
         message: $chirpField.val(),
-        user: 'Will',
+        userId: $userSelector.val(),
+        //time is added in MySQL using DEFAULT NOW()
+        //no need to insert a timestamp
         //timestamp: new Date().toISOString()
     };
     $.ajax({
@@ -37,26 +40,60 @@ function getChirps() {
     }).then(function(chirps) {
         $chirpList.empty();
         for (var i = 0; i < chirps.length; i++) {
-            var $chirpDiv = $('<div class="chirp"></div>');
-            var $message = $('<p></p>');
-            var $user = $('<h4></h4>');
-            var $timestamp = $('<h5></h5>');
-            // var $deletebtn = $('<button>Delete Chirp</button>');
-            var $deletebtn = $('<button id=' + chirps[i].id + '>Delete Chirp</button>');
-            
-            $message.text(chirps[i].message);
-            $user.text(chirps[i].user);
-            $timestamp.text(new Date(chirps[i].timestamp).toLocaleString());
-
-            $message.appendTo($chirpDiv);
-            $user.appendTo($chirpDiv);
-            $timestamp.appendTo($chirpDiv);
-            $deletebtn.appendTo($chirpDiv);
-
-            $chirpDiv.appendTo($chirpList);
+            addChirpDiv(chirps[i]);
         }
     }, function(err) {
         console.log(err);
     });
 }
+
+function deleteChirp(id) {
+    $.ajax({
+        method: 'DELETE',
+        url: '/api/chirps/' + id
+    }).then(function() {
+        getChirps();
+    }, function(err) {
+        console.log(err);
+    });
+}
+
+function populateUsers() {
+    $.ajax({
+        method: 'GET',
+        url: '/api/users'
+    }).then(function(users) {
+        for (var i = 0; i < users.length; i++) {
+            var $userOption = $('<option value="' + users[i].id + '">' + users[i].name + '</option>');
+            $userSelector.append($userOption);
+        }
+    }, function(err) {
+        console.log(err);
+    });
+}
+
+function addChirpDiv(chirp) {
+    var $chirpDiv = $('<div class="chirp"></div>');
+    var $message = $('<p></p>');
+    var $user = $('<h4></h4>');
+    var $timestamp = $('<h5></h5>');
+    var $deletebtn = $('<button class="delete-button">Delete Chirp</button>');
+    
+    $deletebtn.click(function() {
+        deleteChirp(chirp.id);
+    });
+
+    $message.text(chirp.message);
+    $user.text(chirp.userName);
+    $timestamp.text(new Date(chirp.timestamp).toLocaleString());
+
+    $message.appendTo($chirpDiv);
+    $user.appendTo($chirpDiv);
+    $timestamp.appendTo($chirpDiv);
+    $deletebtn.appendTo($chirpDiv);
+
+    $chirpDiv.appendTo($chirpList);
+}
+
+populateUsers();
 getChirps();
